@@ -112,15 +112,8 @@ def is_inspection_row(tag):
         return False
 
 
-def clean_data(cell):
-    try:
-        return cell.string.strip('- :\n')
-    except AttributeError:
-        return ''
-
-if __name__ == '__main__':
-
-    if len(sys.argv) == 1:
+def generate_results(new):
+    if new:
         params = {}
         params['Inspection_Start'] = '2/1/2014'
         params['Inspection_End'] = '2/1/2015'
@@ -136,8 +129,40 @@ if __name__ == '__main__':
         metadata = extract_restuarant_metadata(listing)
         restuarant_data = extract_score_data(listing)
         restuarant_data.update(metadata)
-        print restuarant_data
+        yield restuarant_data
         print
 
     print len(listings)
+
+
+def clean_data(cell):
+    try:
+        return cell.string.strip('- :\n')
+    except AttributeError:
+        return ''
+
+if __name__ == '__main__':
+    for result in generate_results(len(sys.argv) == 1):
+        print result
+
+    # if len(sys.argv) == 1:
+    #     params = {}
+    #     params['Inspection_Start'] = '2/1/2014'
+    #     params['Inspection_End'] = '2/1/2015'
+    #     params['Zip_Code'] = '98006'
+    #     content, encoding = get_inspection_page(**params)
+    #     save_inspection_page(content, encoding)
+    # else:
+    #     content, encoding = load_inspection_page()
+
+    # doc = parse_source(content, encoding)
+    # listings = extract_data_listings(doc)
+    # for listing in listings:
+    #     metadata = extract_restuarant_metadata(listing)
+    #     restuarant_data = extract_score_data(listing)
+    #     restuarant_data.update(metadata)
+    #     print restuarant_data
+    #     print
+
+    # print len(listings)
     # print listings[0].prettify()
