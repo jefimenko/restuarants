@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 from copy import copy
+import pprint
+import geocoder
 import requests
 import sys
 import re
@@ -112,7 +114,19 @@ def is_inspection_row(tag):
         return False
 
 
-def generate_results(new):
+def clean_data(cell):
+    try:
+        return cell.string.strip('- :\n')
+    except AttributeError:
+        return ''
+
+
+def get_geojson(result):
+    response = geocoder.google(result['Address'])
+    return response.geojson
+
+
+def generate_results(new, count):
     if new:
         params = {}
         params['Inspection_Start'] = '2/1/2014'
@@ -125,25 +139,27 @@ def generate_results(new):
 
     doc = parse_source(content, encoding)
     listings = extract_data_listings(doc)
-    for listing in listings:
+    for listing in listings[:count]:
         metadata = extract_restuarant_metadata(listing)
         restuarant_data = extract_score_data(listing)
         restuarant_data.update(metadata)
+        # geo_data = get_geojson(restuarant_data)
+        # restuarant_data.update(geo_data)
         yield restuarant_data
         print
 
     print len(listings)
 
 
-def clean_data(cell):
-    try:
-        return cell.string.strip('- :\n')
-    except AttributeError:
-        return ''
-
 if __name__ == '__main__':
-    for result in generate_results(len(sys.argv) == 1):
-        print result
+    try:
+        count = int(sys.argv[2])
+    except IndexError:
+        count = 10
+    for result in generate_results(len(sys.argv) == 1, count):
+        # print result
+        geo_data = get_geojson(result)
+        pprint.pprint(geo_data)
 
     # if len(sys.argv) == 1:
     #     params = {}
