@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from copy import copy
+import json
 import pprint
 import geocoder
 import requests
@@ -123,7 +124,22 @@ def clean_data(cell):
 
 def get_geojson(result):
     response = geocoder.google(result['Address'])
-    return response.geojson
+    geojson = response.geojson
+    inspection_data = {}
+    use_keys = (
+        'Business Name', 'Average Score', 'Total Inspections'
+        'High Score', 'Address')
+    # My dictionary of results already has strings as values
+    for key, val in result.items():
+        # import pdb; pdb.set_trace()
+        if key not in use_keys:
+            continue
+        inspection_data[key] = val
+    new_address = geojson['properties'].get('address')
+    if new_address:
+        inspection_data['Address'] = new_address
+    geojson['properties'] = inspection_data
+    return geojson
 
 
 def generate_results(new, count):
@@ -156,29 +172,11 @@ if __name__ == '__main__':
         count = int(sys.argv[2])
     except IndexError:
         count = 10
+    all_results = {'type': 'FeatureCollection', 'features': []}
     for result in generate_results(len(sys.argv) == 1, count):
         # print result
         geo_data = get_geojson(result)
         pprint.pprint(geo_data)
-
-    # if len(sys.argv) == 1:
-    #     params = {}
-    #     params['Inspection_Start'] = '2/1/2014'
-    #     params['Inspection_End'] = '2/1/2015'
-    #     params['Zip_Code'] = '98006'
-    #     content, encoding = get_inspection_page(**params)
-    #     save_inspection_page(content, encoding)
-    # else:
-    #     content, encoding = load_inspection_page()
-
-    # doc = parse_source(content, encoding)
-    # listings = extract_data_listings(doc)
-    # for listing in listings:
-    #     metadata = extract_restuarant_metadata(listing)
-    #     restuarant_data = extract_score_data(listing)
-    #     restuarant_data.update(metadata)
-    #     print restuarant_data
-    #     print
-
-    # print len(listings)
-    # print listings[0].prettify()
+        all_results['features'].append(geo_data)
+    with open('my_map.json', 'w') as handle:
+        json.dump(all_results, handle)
